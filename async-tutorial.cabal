@@ -12,6 +12,7 @@ executable tutorial
     , async
     , text
     , say
+    , unliftio
 
   ghc-options:
     -Wall -threaded -with-rtsopts=-N

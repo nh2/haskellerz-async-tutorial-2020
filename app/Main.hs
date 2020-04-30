@@ -5,15 +5,16 @@ module Main where
 
 import Control.Applicative ((<|>))
 import Control.Concurrent (forkIO, threadDelay)
-import Control.Concurrent.Async
 import Control.Concurrent.MVar
-import Control.Exception (bracket)
+import Control.Exception (bracket, bracket_)
 import Control.Monad (when)
 import Data.Foldable (for_)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Say
 import System.Timeout (timeout)
+import UnliftIO.Async
+import Control.Concurrent.QSem
 
 data Resource = FileDescriptor
   deriving (Eq, Ord, Show)
@@ -116,26 +117,49 @@ main = do
   -- page <- timeout 1500000 $ getURL "url1"
   -- print page
 
-  var1 <- newEmptyMVar
-  var2 <- newEmptyMVar
+  -- var1 <- newEmptyMVar
+  -- var2 <- newEmptyMVar
 
-  tid1 <- forkIO $ do
-    page1 <- getURL "url1"
-    error $ "connection aborted"
-    putMVar var1 page1
-    say $ T.pack $ show page1
+  -- tid1 <- forkIO $ do
+  --   page1 <- getURL "url1"
+  --   error $ "connection aborted"
+  --   putMVar var1 page1
+  --   say $ T.pack $ show page1
 
-  tid2 <- forkIO $ do
-    page2 <- getURL "url2"
-    putMVar var2 page2
-    say $ T.pack $ show page2
+  -- tid2 <- forkIO $ do
+  --   page2 <- getURL "url2"
+  --   putMVar var2 page2
+  --   say $ T.pack $ show page2
 
-  print tid1
-  print tid2
+  -- print tid1
+  -- print tid2
 
-  page1 <- takeMVar var1 -- this hangs forever (unless GHC detects it, then we get a fancy error we didn't expect)
-  page2 <- takeMVar var2
+  -- page1 <- takeMVar var1 -- this hangs forever (unless GHC detects it, then we get a fancy error we didn't expect)
+  -- page2 <- takeMVar var2
 
 
-  print page1
-  print page2
+  -- print page1
+  -- print page2
+
+  let withQSem :: QSem -> IO a -> IO a
+      withQSem sem f = bracket_ (waitQSem sem) (signalQSem sem) f
+
+
+  let urls =
+        [ T.pack ("url" <> show i)
+        | i <- [1..20 :: Int]
+        ]
+
+  sem <- newQSem 4
+
+  pages <- forConcurrently urls $ \url ->
+    -- Safe but not great, because it will start more threads at cancellation
+    -- because not all cancellation signals appear at the same time,
+    -- so some QSem slots become free before their threads get cancelled.
+    -- Confusing behaviour seen by the user.
+    --
+    -- Also bad because we start unlimitedly many threads in `forConcurrently`
+    -- and then they all block (memory usage and schedulding overhead).
+    withQSem sem $ do
+      getURL url
+  print pages
