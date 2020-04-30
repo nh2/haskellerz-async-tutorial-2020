@@ -1,4 +1,4 @@
-`async` tutorial 2020 (HaskellerZ talk)
+`async` tutorial 2020 ([HaskellerZ talk](https://www.meetup.com/HaskellerZ/events/270136648/))
 =======================================
 
 _by Niklas Hambüchen_
