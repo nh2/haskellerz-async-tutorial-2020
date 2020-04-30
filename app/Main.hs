@@ -3,6 +3,7 @@
 
 module Main where
 
+import Control.Applicative ((<|>))
 import Control.Monad (when)
 import Control.Concurrent.Async
 import Control.Concurrent (threadDelay)
@@ -18,7 +19,7 @@ getURL url = do
   threadDelay (1 * 1000000)
   say $ "Downloading " <> url <> ": 1 second passed"
 
-  when (url == "url1") $ error $ "connection aborted for " <> show url
+  -- when (url == "url1") $ error $ "connection aborted for " <> show url
 
   threadDelay (1 * 1000000)
   say $ "Downloading " <> url <> ": 2 seconds passed"
@@ -72,8 +73,21 @@ main = do
   --   getURL url
   -- print pages
 
-  eResult <- race
-    (getURLwithDuration 5 "url1")
-    (getURLwithDuration 3 "url2")
+  -- eResult <- race
+  --   (getURLwithDuration 5 "url1")
+  --   (getURLwithDuration 3 "url2")
 
-  print eResult
+  -- print eResult
+
+
+  (page1, page2, page3)
+      <-
+      runConcurrently $
+        (,,)
+          <$> Concurrently (getURL "url1")
+          <*> ( Concurrently (getURL "url2a") <|> Concurrently (getURL "url2b") )
+          <*> Concurrently (getURL "url3")
+
+  print page1
+  print page2
+  print page3
