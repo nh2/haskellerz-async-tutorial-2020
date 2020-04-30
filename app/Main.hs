@@ -6,7 +6,9 @@ module Main where
 import Control.Monad (when)
 import Control.Concurrent.Async
 import Control.Concurrent (threadDelay)
+import Data.Foldable (for_)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Say
 
 getURL :: Text -> IO Text
@@ -27,6 +29,19 @@ getURL url = do
 
   return $ "Contents of " <> url
 
+getURLwithDuration :: Int -> Text -> IO Text
+getURLwithDuration seconds url = do
+
+  say $ "Downloading " <> url <> ": Starting"
+
+  for_ [1..seconds] $ \s -> do
+    threadDelay (1 * 1000000)
+    say $ "Downloading " <> url <> ": " <> T.pack (show s) <> " second passed"
+
+  say $ "Downloading " <> url <> ": Done"
+
+  return $ "Contents of " <> url
+
 
 main :: IO ()
 main = do
@@ -42,6 +57,23 @@ main = do
   --     print page1
   --     print page2
 
-  (page1, page2) <- concurrently (getURL "url1") (getURL "url2")
-  print page1
-  print page2
+  -- (page1, page2) <- concurrently (getURL "url1") (getURL "url2")
+  -- print page1
+  -- print page2
+
+  -- let urls =
+  --       [ "url1"
+  --       , "url2"
+  --       , "url3"
+  --       , "url4"
+  --       ]
+
+  -- pages <- forConcurrently urls $ \url ->
+  --   getURL url
+  -- print pages
+
+  eResult <- race
+    (getURLwithDuration 5 "url1")
+    (getURLwithDuration 3 "url2")
+
+  print eResult
