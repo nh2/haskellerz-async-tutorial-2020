@@ -6,6 +6,7 @@ module Main where
 import Control.Applicative ((<|>))
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.Async
+import Control.Concurrent.MVar
 import Control.Exception (bracket)
 import Control.Monad (when)
 import Data.Foldable (for_)
@@ -115,13 +116,26 @@ main = do
   -- page <- timeout 1500000 $ getURL "url1"
   -- print page
 
+  var1 <- newEmptyMVar
+  var2 <- newEmptyMVar
+
   tid1 <- forkIO $ do
     page1 <- getURL "url1"
+    error $ "connection aborted"
+    putMVar var1 page1
     say $ T.pack $ show page1
 
   tid2 <- forkIO $ do
     page2 <- getURL "url2"
+    putMVar var2 page2
     say $ T.pack $ show page2
 
   print tid1
   print tid2
+
+  page1 <- takeMVar var1 -- this hangs forever (unless GHC detects it, then we get a fancy error we didn't expect)
+  page2 <- takeMVar var2
+
+
+  print page1
+  print page2
