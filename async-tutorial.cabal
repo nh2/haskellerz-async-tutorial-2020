@@ -10,6 +10,8 @@ executable tutorial
   build-depends:
       base             >= 4 && < 5
     , async
+    , text
+    , say
 
   ghc-options:
     -Wall
