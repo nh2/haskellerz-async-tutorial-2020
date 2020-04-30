@@ -139,10 +139,30 @@ main = do
 
 
   -- print page1
-  -- print page2
+  -- -- print page2
 
-  let withQSem :: QSem -> IO a -> IO a
-      withQSem sem f = bracket_ (waitQSem sem) (signalQSem sem) f
+  -- let withQSem :: QSem -> IO a -> IO a
+  --     withQSem sem f = bracket_ (waitQSem sem) (signalQSem sem) f
+
+
+  -- let urls =
+  --       [ T.pack ("url" <> show i)
+  --       | i <- [1..20 :: Int]
+  --       ]
+
+  -- sem <- newQSem 4
+
+  -- pages <- forConcurrently urls $ \url ->
+  --   -- Safe but not great, because it will start more threads at cancellation
+  --   -- because not all cancellation signals appear at the same time,
+  --   -- so some QSem slots become free before their threads get cancelled.
+  --   -- Confusing behaviour seen by the user.
+  --   --
+  --   -- Also bad because we start unlimitedly many threads in `forConcurrently`
+  --   -- and then they all block (memory usage and schedulding overhead).
+  --   withQSem sem $ do
+  --     getURL url
+  -- print pages
 
 
   let urls =
@@ -150,16 +170,9 @@ main = do
         | i <- [1..20 :: Int]
         ]
 
-  sem <- newQSem 4
+  let concurrencyLimit = 4
 
-  pages <- forConcurrently urls $ \url ->
-    -- Safe but not great, because it will start more threads at cancellation
-    -- because not all cancellation signals appear at the same time,
-    -- so some QSem slots become free before their threads get cancelled.
-    -- Confusing behaviour seen by the user.
-    --
-    -- Also bad because we start unlimitedly many threads in `forConcurrently`
-    -- and then they all block (memory usage and schedulding overhead).
-    withQSem sem $ do
-      getURL url
+  pages <- pooledForConcurrentlyN concurrencyLimit urls $ \url ->
+    getURL url
+
   print pages
