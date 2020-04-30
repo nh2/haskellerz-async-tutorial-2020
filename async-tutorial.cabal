@@ -14,4 +14,4 @@ executable tutorial
     , say
 
   ghc-options:
-    -Wall
+    -Wall -threaded -with-rtsopts=-N

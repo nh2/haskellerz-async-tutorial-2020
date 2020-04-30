@@ -3,11 +3,11 @@
 
 module Main where
 
-import Control.Exception (bracket)
 import Control.Applicative ((<|>))
-import Control.Monad (when)
+import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.Async
-import Control.Concurrent (threadDelay)
+import Control.Exception (bracket)
+import Control.Monad (when)
 import Data.Foldable (for_)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -112,5 +112,16 @@ main = do
   -- * Chan
   -- * STM
 
-  page <- timeout 1500000 $ getURL "url1"
-  print page
+  -- page <- timeout 1500000 $ getURL "url1"
+  -- print page
+
+  tid1 <- forkIO $ do
+    page1 <- getURL "url1"
+    say $ T.pack $ show page1
+
+  tid2 <- forkIO $ do
+    page2 <- getURL "url2"
+    say $ T.pack $ show page2
+
+  print tid1
+  print tid2
