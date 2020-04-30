@@ -3,6 +3,7 @@
 
 module Main where
 
+import Control.Exception (bracket)
 import Control.Applicative ((<|>))
 import Control.Monad (when)
 import Control.Concurrent.Async
@@ -11,24 +12,36 @@ import Data.Foldable (for_)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Say
+import System.Timeout (timeout)
+
+data Resource = FileDescriptor
+  deriving (Eq, Ord, Show)
 
 getURL :: Text -> IO Text
 getURL url = do
+  bracket
+    -- create resource
+    (do say $ "Acquiring file descriptor"
+        return FileDescriptor
+    )
+    -- free the resouce
+    (\fd -> say $ "Deallocating file descriptor " <> T.pack (show fd))
+    $ \fd -> do -- do something with the resource
 
-  say $ "Downloading " <> url <> ": Starting"
-  threadDelay (1 * 1000000)
-  say $ "Downloading " <> url <> ": 1 second passed"
+      say $ "Downloading " <> url <> ": Starting with fd " <> T.pack (show fd)
+      threadDelay (1 * 1000000)
+      say $ "Downloading " <> url <> ": 1 second passed"
 
-  -- when (url == "url1") $ error $ "connection aborted for " <> show url
+      -- when (url == "url1") $ error $ "connection aborted for " <> show url
 
-  threadDelay (1 * 1000000)
-  say $ "Downloading " <> url <> ": 2 seconds passed"
-  threadDelay (1 * 1000000)
-  say $ "Downloading " <> url <> ": 3 second3 passed"
-  threadDelay (1 * 1000000)
-  say $ "Downloading " <> url <> ": Done"
+      threadDelay (1 * 1000000)
+      say $ "Downloading " <> url <> ": 2 seconds passed"
+      threadDelay (1 * 1000000)
+      say $ "Downloading " <> url <> ": 3 second3 passed"
+      threadDelay (1 * 1000000)
+      say $ "Downloading " <> url <> ": Done"
 
-  return $ "Contents of " <> url
+      return $ "Contents of " <> url
 
 getURLwithDuration :: Int -> Text -> IO Text
 getURLwithDuration seconds url = do
@@ -80,14 +93,24 @@ main = do
   -- print eResult
 
 
-  (page1, page2, page3)
-      <-
-      runConcurrently $
-        (,,)
-          <$> Concurrently (getURL "url1")
-          <*> ( Concurrently (getURL "url2a") <|> Concurrently (getURL "url2b") )
-          <*> Concurrently (getURL "url3")
+  -- (page1, page2, page3)
+  --     <-
+  --     runConcurrently $
+  --       (,,)
+  --         <$> Concurrently (getURL "url1")
+  --         <*> ( Concurrently (getURL "url2a") <|> Concurrently (getURL "url2b") )
+  --         <*> Concurrently (getURL "url3")
 
-  print page1
-  print page2
-  print page3
+  -- print page1
+  -- print page2
+  -- print page3
+
+
+  -- Cross-thread communications:
+  -- * IORef
+  -- * MVar
+  -- * Chan
+  -- * STM
+
+  page <- timeout 1500000 $ getURL "url1"
+  print page
